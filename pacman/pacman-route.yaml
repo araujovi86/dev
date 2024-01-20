@@ -1,0 +1,14 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  creationTimestamp: null
+  labels:
+    name: pacman
+  name: pacman
+spec:
+  tls:
+    termination: edge
+  to:
+    kind: ""
+    name: pacman
+    weight: null

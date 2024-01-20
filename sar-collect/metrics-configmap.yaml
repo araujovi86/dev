@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: metrics-scripts
+  namespace: metrics-debug
+data:
+  install-requirements.sh: |
+    #!/bin/bash
+    yum install procps-ng perf psmisc hostname iproute sysstat iotop -y
+  collect-metrics.sh: |
+    #!/bin/bash
+    # Resolution in seconds
+    RESOLUTION=5 
+    # Duration in seconds (or whatever is acceptable as an argument to "sleep")
+    DURATION=600
+    echo "Gathering metrics ..."
+    mkdir /metrics
+    rm -Rf /metrics/*
+    pidstat -p ALL -T ALL -I -l -r  -t  -u -w ${RESOLUTION} > /metrics/pidstat.txt &
+    PIDSTAT=$!
+    sar -A ${RESOLUTION} > /metrics/sar.txt &
+    SAR=$!
+    bash -c "while true; do date ; ps aux | sort -nrk 3,3 | head -n 20 ; sleep ${RESOLUTION} ; done" > /metrics/ps.txt &
+    PS=$!
+    bash -c "while true ; do date ; free -m ; sleep ${RESOLUTION} ; done" > /metrics/free.txt &
+    FREE=$!
+    bash -c "while true ; do date ; cat /proc/softirqs; sleep ${RESOLUTION}; done" > /metrics/softirqs.txt &
+    SOFTIRQS=$!
+    bash -c "while true ; do date ; cat /proc/interrupts; sleep ${RESOLUTION}; done" > /metrics/interrupts.txt &
+    INTERRUPTS=$!
+    iotop -Pobt > /metrics/iotop.txt &
+    IOTOP=$!
+    echo "Metrics gathering started. Please wait for completion..."
+    sleep "${DURATION}"
+    kill $PIDSTAT
+    kill $SAR
+    kill $PS
+    kill $FREE
+    kill $SOFTIRQS
+    kill $INTERRUPTS
+    kill $IOTOP
+    sync
+    tar -czf /metrics.tar.gz /metrics
+    echo "Done with metrics collection."

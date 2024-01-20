@@ -1,0 +1,19 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  creationTimestamp: null
+  labels:
+    app: python-pg
+    app.kubernetes.io/component: python-pg
+    app.kubernetes.io/instance: python-pg
+  name: python-pg
+spec:
+  port:
+    targetPort: 5000-tcp
+  tls:
+    termination: edge
+  to:
+    kind: ""
+    name: python-pg
+    weight: null
+status: {}

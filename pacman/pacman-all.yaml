@@ -1,0 +1,255 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  creationTimestamp: null
+  name: pacman
+spec: {}
+status: {}
+---
+apiVersion: v1
+data:
+  database-admin-name: Y2x5ZGU=
+  database-admin-password: Y2x5ZGU=
+  database-name: cGFjbWFu
+  database-password: cGlua3k=
+  database-user: Ymxpbmt5
+kind: Secret
+metadata:
+  name: mongodb-users-secret
+  namespace: pacman
+type: Opaque
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: mongo
+    app.kubernetes.io/component: mongo
+    app.kubernetes.io/instance: mongo
+  name: mongo
+  namespace: pacman
+spec:
+  ports:
+  - port: 27017
+    protocol: TCP
+    targetPort: 27017
+  selector:
+    deployment: mongo
+status:
+  loadBalancer: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    name: pacman
+  name: pacman
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    name: pacman
+status:
+  loadBalancer: {}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-storage
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: vsphere-sc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+    image.openshift.io/triggers: '[{"from":{"kind":"ImageStreamTag","name":"mongo:latest"},"fieldPath":"spec.template.spec.containers[?(@.name==\"mongo\")].image"}]'
+    openshift.io/generated-by: OpenShiftNewApp
+  generation: 5
+  labels:
+    app: mongo
+    app.kubernetes.io/component: mongo
+    app.kubernetes.io/instance: mongo
+  name: mongo
+  namespace: pacman
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      deployment: mongo
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        openshift.io/generated-by: OpenShiftNewApp
+      creationTimestamp: null
+      labels:
+        deployment: mongo
+    spec:
+      containers:
+      - env:
+        - name: MONGODB_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: database-admin-password
+              name: mongodb-users-secret
+        - name: MONGODB_DATABASE
+          valueFrom:
+            secretKeyRef:
+              key: database-name
+              name: mongodb-users-secret
+        - name: MONGODB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: database-password
+              name: mongodb-users-secret
+        - name: MONGODB_USER
+          valueFrom:
+            secretKeyRef:
+              key: database-user
+              name: mongodb-users-secret
+        image: registry.redhat.io/rhscl/mongodb-36-rhel7@sha256:ed03f25512d3a60c41d7c8460e1962ce4191a7519dce57d2ca136d7f893423a4
+        imagePullPolicy: IfNotPresent
+        name: mongo
+        ports:
+        - containerPort: 27017
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /var/lib/mongodb/data
+          name: mongo-db
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: mongo-db
+        persistentVolumeClaim:
+          claimName: mongo-storage
+status: null
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+    source: https://github.com/saintdle/pacman-tanzu
+  generation: 1
+  labels:
+    name: pacman
+  name: pacman
+  namespace: pacman
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      name: pacman
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        name: pacman
+    spec:
+      containers:
+      - env:
+        - name: MONGO_SERVICE_HOST
+          value: mongo
+        - name: MONGO_AUTH_USER
+          valueFrom:
+            secretKeyRef:
+              key: database-user
+              name: mongodb-users-secret
+        - name: MONGO_AUTH_PWD
+          valueFrom:
+            secretKeyRef:
+              key: database-password
+              name: mongodb-users-secret
+        - name: MONGO_DATABASE
+          value: pacman
+        - name: MY_MONGO_PORT
+          value: "27017"
+        - name: MONGO_USE_SSL
+          value: "false"
+        - name: MONGO_VALIDATE_SSL
+          value: "false"
+        - name: MY_NODE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        image: quay.io/ifont/pacman-nodejs-app:latest
+        imagePullPolicy: Always
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: 8080
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: pacman
+        ports:
+        - containerPort: 8080
+          name: http-server
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: 8080
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status: null
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  creationTimestamp: null
+  labels:
+    name: pacman
+  name: pacman
+spec:
+  tls:
+    termination: edge
+  to:
+    kind: ""
+    name: pacman
+    weight: null
+status: {}

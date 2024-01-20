@@ -1,0 +1,42 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: metrics-daemonset
+  namespace: metrics-debug
+  labels:
+    app: metrics-daemonset
+spec:
+  selector:
+    matchLabels:
+      app: metrics-daemonset
+  template:
+    metadata:
+      labels:
+        app: metrics-daemonset
+    spec:
+      tolerations:     
+      - key: node-role.kubernetes.io/master # this toleration is to have the daemonset runnable on master nodes
+        effect: NoSchedule # remove it if your masters can't run pods
+      hostPID: true
+      hostIPC: true
+      hostNetwork: true
+      containers:
+      - name: metrics-daemonset
+        image: fedora:latest
+        command:
+          - "/bin/bash"
+          - "-c"
+          - "bash /entrypoint/install-requirements.sh && bash /entrypoint/collect-metrics.sh && sleep infinity"
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: entrypoint
+          mountPath: /entrypoint
+        securityContext:
+          runAsUser: 0
+          runAsGroup: 0
+          privileged: true
+      volumes:
+      - name: entrypoint
+        configMap:
+          name: metrics-scripts
