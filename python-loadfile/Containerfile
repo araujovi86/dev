@@ -1,0 +1,7 @@
+FROM registry.access.redhat.com/ubi9/python-311:1-41
+
+COPY ./app.py /opt/app-root/bin/app.py
+
+RUN mkdir  /opt/app-root/input
+
+ENTRYPOINT ["/opt/app-root/bin/app.py"]
