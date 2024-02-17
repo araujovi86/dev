@@ -1,0 +1,22 @@
+{
+	"@metadata": {
+		"authors": [
+			"Adam-Yourist",
+			"ElizaMag",
+			"Умар",
+			"Ӏабдуррашид"
+		]
+	},
+	"tooltip-ca-ve-edit": "Ху́вца ер оагIув",
+	"visualeditor-ca-createlocaldescriptionsource": "Локальни йоазонца сурт оттадара хьаст (источник) тIатIоха",
+	"visualeditor-ca-createsource": "Хьакхолла дӀадолалу текст санна",
+	"visualeditor-ca-editsource": "Тоаде чура",
+	"visualeditor-ca-editsource-section": "тоаде чура",
+	"visualeditor-descriptionpagelink": "Project:Визуальни редактор",
+	"visualeditor-dialog-media-info-created": "Кхеллад: $1",
+	"visualeditor-dialog-template-title": "Ло",
+	"visualeditor-dialog-transclusion-contextitem-loading": "Чудиллар",
+	"visualeditor-dialogbutton-media-tooltip": "Сурташи медиафайлаши",
+	"visualeditor-dialogbutton-template-tooltip": "Ло",
+	"visualeditor-linkinspector-educationpopup-title": "Тӏатовжамаш"
+}
